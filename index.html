@@ -607,9 +607,36 @@
         try {
             const zones = Intl.supportedValuesOf('timeZone');
             const dataList = document.getElementById('tz_list');
+
+            // Common Aliases to make search "Smart"
+            const tzAliases = {
+                'America/Los_Angeles': '🇺🇸 US Pacific (California, Oregon, Washington, Las Vegas)',
+                'America/New_York': '🇺🇸 US Eastern (New York, Florida, DC, Atlanta, Miami)',
+                'America/Chicago': '🇺🇸 US Central (Texas, Chicago, Mexico City)',
+                'America/Denver': '🇺🇸 US Mountain (Colorado, Arizona, Utah)',
+                'America/Sao_Paulo': '🇧🇷 Brazil (Brasilia, Rio)',
+                'America/Argentina/Buenos_Aires': '🇦🇷 Argentina (Buenos Aires)',
+                'Europe/London': '🇬🇧 UK (London, Ireland, GMT)',
+                'Europe/Madrid': '🇪🇸 Spain (Madrid, Barcelona, CET)',
+                'Europe/Paris': '🇫🇷 France (Paris, CET)',
+                'Asia/Tokyo': '🇯🇵 Japan (Tokyo)',
+                'Australia/Sydney': '🇦🇺 Australia (Sydney, Canberra)'
+            };
+
             zones.forEach(z => {
                 const opt = document.createElement('option');
                 opt.value = z;
+
+                // If we have a friendly name/alias, put it in the text content
+                // Browsers usually search both Value and Text of datalist options
+                if (tzAliases[z]) {
+                    opt.label = tzAliases[z]; // Some browsers show label
+                    opt.innerText = tzAliases[z]; // Fallback text
+                } else {
+                    // For others, just clean up the name for readability if possible? 
+                    // No, let's leave them raw or browsers might hide the ID.
+                }
+
                 dataList.appendChild(opt);
             });
         } catch (e) {
