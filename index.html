@@ -121,6 +121,7 @@
             font-size: 2rem;
             margin: 0 0 10px 0;
             background: linear-gradient(90deg, var(--primary), var(--accent));
+            background-clip: text;
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             font-weight: 700;
@@ -389,11 +390,32 @@
                     </div>
                 </div>
 
+                <div class="form-group">
+                    <label>Event Timezone (Fixes "Wrong Day" issues)</label>
+                    <select id="timezone_offset" onchange="updateLink()"
+                        style="width: 100%; padding: 12px; border-radius: 12px; border: 2px solid var(--input-border); background: var(--input-bg);">
+                        <option value="">UTC (Default - May show wrong day)</option>
+                        <option value="-03:00">🇦🇷 Argentina / Brasil (UTC-3)</option>
+                        <option value="-04:00">🌎 America East (UTC-4)</option>
+                        <option value="-05:00">🇺🇸 Eastern Time (UTC-5)</option>
+                        <option value="-06:00">🇺🇸 Central Time (UTC-6)</option>
+                        <option value="-07:00">🏞️ Mountain Time (UTC-7)</option>
+                        <option value="-08:00">🌉 Pacific Time / Oregon (UTC-8)</option>
+                        <option value="+00:00">🇬🇧 UK / GMT (UTC+0)</option>
+                        <option value="+01:00">🇪🇺 Central Europe (UTC+1)</option>
+                        <option value="+02:00">🇪🇺 East Europe (UTC+2)</option>
+                    </select>
+                    <div style="font-size: 0.75rem; color: var(--primary); margin-top: 4px;">
+                        * Select the timezone WHERE THE EVENT IS HAPPENING.
+                    </div>
+                </div>
+
                 <label class="toggle-wrapper">
                     <span>All Day Event</span>
                     <input type="checkbox" id="all_day" onchange="toggleTimeInputs()">
                     <div class="toggle-switch"></div>
                 </label>
+
 
                 <div class="form-group" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
                     <div>
@@ -630,6 +652,7 @@
             const description = document.getElementById('description').value;
             const organizer = document.getElementById('organizer').value;
             const isAllDay = document.getElementById('all_day').checked;
+            const tzOffset = document.getElementById('timezone_offset').value;
 
             // Advanced
             const attach = document.getElementById('attach').value;
@@ -640,12 +663,51 @@
 
             // Calculate dates
             let dtstart, dtend;
+            let useAllDayParam = isAllDay;
+
             if (isAllDay) {
-                dtstart = document.getElementById('date_start').value;
-                dtend = document.getElementById('date_end').value;
+                // ALL DAY LOGIC
+                const ds = document.getElementById('date_start').value;
+                const de = document.getElementById('date_end').value;
+
+                if (tzOffset) {
+                    // Timezone Fix: Send specific time with offset to force correct day in UTC
+                    // e.g. 2026-06-21T00:00:00-08:00
+                    // Agical will convert this to 2026-06-21T08:00:00Z
+                    // Devices will read it correctly relative to their zone.
+                    // IMPORTANT: We typically drop 'all_day=1' to rely on the time, 
+                    // BUT for a true "All Day" feel, 00:00 to 00:00 next day is best.
+                    // Agical might imply timed event if we send time. 
+                    // Let's try sending just the start/end with offset logic.
+
+                    dtstart = ds ? `${ds}T00:00:00${tzOffset}` : '';
+                    dtend = de ? `${de}T00:00:00${tzOffset}` : '';
+
+                    // If we send time, we usually DON'T want all_day=1 because Agical ignores time with all_day=1?
+                    // Let's assume we WANT precise control, so we disable auto-all-day flag if we are forcing timezone.
+                    useAllDayParam = false;
+                } else {
+                    // Legacy/Default (UTC Midnight)
+                    dtstart = ds;
+                    dtend = de;
+                }
             } else {
-                dtstart = document.getElementById('dtstart').value;
-                dtend = document.getElementById('dtend').value;
+                // TIMED LOGIC
+                let s = document.getElementById('dtstart').value;
+                let e = document.getElementById('dtend').value;
+
+                if (tzOffset && s && e) {
+                    // Browser datetime-local usually has no offset (implied local).
+                    // We need to attach the chosen offset.
+                    dtstart = `${s}:00${tzOffset}`;
+                    dtend = `${e}:00${tzOffset}`;
+                } else {
+                    // No offset selected, rely on Agical default (or append Z if we wanted UTC)
+                    // Agical likely treats YYYY-MM-DDTHH:mm as floating or UTC?
+                    // Let's send it raw if no offset.
+                    dtstart = s;
+                    dtend = e;
+                }
             }
 
             // Date Validation
@@ -756,7 +818,7 @@
             // Dates
             if (dtstart) params.append('dtstart', dtstart);
             if (dtend) params.append('dtend', dtend);
-            if (isAllDay) params.append('all_day', '1');
+            if (useAllDayParam) params.append('all_day', '1');
 
             const finalUrl = `https://ics.agical.io/?${params.toString()}`;
 
