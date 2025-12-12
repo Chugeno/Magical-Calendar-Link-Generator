@@ -1,0 +1,820 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Magical Calendar Link Generator</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* Modern Reset & Variables */
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --accent: #ec4899;
+            --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+            --card-bg: rgba(255, 255, 255, 0.95);
+            --card-glass: rgba(255, 255, 255, 0.1);
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --border-radius: 16px;
+            --input-bg: #f8fafc;
+            --input-border: #e2e8f0;
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            --shadow-glow: 0 0 20px rgba(99, 102, 241, 0.3);
+        }
+
+        * {
+            box-sizing: border-box;
+            outline: none;
+        }
+
+        body {
+            margin: 0;
+            font-family: 'Outfit', sans-serif;
+            background: var(--bg-gradient);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            color: var(--text-main);
+        }
+
+        /* Background Shapes */
+        .bg-shape {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(80px);
+            z-index: -1;
+            animation: float 20s infinite ease-in-out;
+        }
+
+        .shape-1 {
+            width: 400px;
+            height: 400px;
+            background: rgba(99, 102, 241, 0.3);
+            top: -100px;
+            left: -100px;
+        }
+
+        .shape-2 {
+            width: 300px;
+            height: 300px;
+            background: rgba(236, 72, 153, 0.2);
+            bottom: -50px;
+            right: -50px;
+            animation-delay: -5s;
+        }
+
+        @keyframes float {
+
+            0%,
+            100% {
+                transform: translate(0, 0);
+            }
+
+            50% {
+                transform: translate(20px, 40px);
+            }
+        }
+
+        /* Main Container */
+        .app-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            width: 100%;
+            max-width: 1100px;
+            backdrop-filter: blur(10px);
+        }
+
+        @media (max-width: 900px) {
+            .app-container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Card Styles */
+        .card {
+            background: var(--card-bg);
+            padding: 40px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-lg);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary), var(--accent));
+        }
+
+        h1 {
+            font-size: 2rem;
+            margin: 0 0 10px 0;
+            background: linear-gradient(90deg, var(--primary), var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: 700;
+        }
+
+        p.subtitle {
+            color: var(--text-muted);
+            margin-bottom: 30px;
+        }
+
+        /* Form Elements */
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--text-main);
+            font-size: 0.9rem;
+        }
+
+        input[type="text"],
+        input[type="datetime-local"],
+        input[type="date"],
+        textarea {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid var(--input-border);
+            border-radius: 12px;
+            background: var(--input-bg);
+            font-family: inherit;
+            font-size: 1rem;
+            transition: all 0.2s ease;
+        }
+
+        input:focus,
+        textarea:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+            background: white;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        /* Toggle Switch */
+        .toggle-wrapper {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: var(--input-bg);
+            border: 2px solid var(--input-border);
+            padding: 10px 16px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            cursor: pointer;
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 50px;
+            height: 26px;
+            background: #cbd5e1;
+            border-radius: 20px;
+            transition: 0.3s;
+        }
+
+        .toggle-switch::after {
+            content: '';
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            width: 20px;
+            height: 20px;
+            background: white;
+            border-radius: 50%;
+            transition: 0.3s;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        input[type="checkbox"] {
+            display: none;
+        }
+
+        input[type="checkbox"]:checked+.toggle-switch {
+            background: var(--primary);
+        }
+
+        input[type="checkbox"]:checked+.toggle-switch::after {
+            transform: translateX(24px);
+        }
+
+        /* Preview Section */
+        .preview-pane {
+            /* sticky on desktop */
+            position: sticky;
+            top: 20px;
+        }
+
+        .mockup-window {
+            background: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-lg);
+            overflow: hidden;
+            margin-bottom: 30px;
+        }
+
+        .mockup-header {
+            background: #f1f5f9;
+            padding: 12px 20px;
+            display: flex;
+            gap: 8px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .red {
+            background: #ef4444;
+        }
+
+        .yellow {
+            background: #eab308;
+        }
+
+        .green {
+            background: #22c55e;
+        }
+
+        .mockup-content {
+            padding: 30px;
+        }
+
+        .event-card {
+            border-left: 4px solid var(--primary);
+            padding-left: 20px;
+        }
+
+        .event-time {
+            font-size: 0.85rem;
+            color: var(--accent);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+
+        .event-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin: 0 0 10px 0;
+            line-height: 1.2;
+        }
+
+        .event-detail {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+            color: var(--text-muted);
+            font-size: 0.95rem;
+        }
+
+        .event-icon {
+            width: 20px;
+            text-align: center;
+            opacity: 0.7;
+        }
+
+        /* Result Section */
+        .result-box {
+            background: #1e1b4b;
+            padding: 20px;
+            border-radius: 12px;
+            color: white;
+            word-break: break-all;
+            font-family: monospace;
+            font-size: 0.85rem;
+            margin-bottom: 20px;
+            position: relative;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .actions {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 15px;
+        }
+
+        .btn {
+            padding: 14px 24px;
+            border: none;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(90deg, var(--primary), var(--primary-dark));
+            color: white;
+            box-shadow: 0 4px 6px rgba(99, 102, 241, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 12px rgba(99, 102, 241, 0.3);
+        }
+
+        .btn-secondary {
+            background: white;
+            color: var(--text-main);
+            border: 2px solid #e2e8f0;
+        }
+
+        .btn-secondary:hover {
+            background: #f8fafc;
+            border-color: #cbd5e1;
+        }
+
+        /* Empty States */
+        .empty {
+            color: #ccc;
+            font-style: italic;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="bg-shape shape-1"></div>
+    <div class="bg-shape shape-2"></div>
+
+    <div class="app-container">
+
+        <!-- EDITOR COLUMN -->
+        <div class="card">
+            <h1>Create Calendar Link</h1>
+            <p class="subtitle">Fill in the details to generate a universal `ics.agical.io` link.</p>
+
+            <form id="calForm" oninput="updateLink()">
+                <!-- CORE DETAILS -->
+                <div class="form-group">
+                    <label>Event Subject</label>
+                    <input type="text" id="subject" placeholder="e.g. Tango 10th Anniversary" autocomplete="off">
+                </div>
+
+                <div class="form-group">
+                    <label>Location</label>
+                    <input type="text" id="location" placeholder="e.g. Reed College, Portland" autocomplete="off">
+                    <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">
+                        * This is just text. Calendar apps will try to find this place on a map automatically.
+                    </div>
+                </div>
+
+                <label class="toggle-wrapper">
+                    <span>All Day Event</span>
+                    <input type="checkbox" id="all_day" onchange="toggleTimeInputs()">
+                    <div class="toggle-switch"></div>
+                </label>
+
+                <div class="form-group" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                    <div>
+                        <label>Start</label>
+                        <input type="datetime-local" id="dtstart">
+                        <input type="date" id="date_start" style="display: none;">
+                    </div>
+                    <div>
+                        <label>End</label>
+                        <input type="datetime-local" id="dtend">
+                        <input type="date" id="date_end" style="display: none;">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Description</label>
+                    <textarea id="description" placeholder="Event details, links, etc..."></textarea>
+                </div>
+
+                <!-- ADVANCED TOGGLE -->
+                <div style="margin: 20px 0; border-top: 1px solid var(--input-border); padding-top: 20px;">
+                    <button type="button" class="btn btn-secondary" style="width: 100%; justify-content: space-between;"
+                        onclick="toggleAdvanced()">
+                        <span>✨ Advanced Options</span>
+                        <span id="adv-arrow">▼</span>
+                    </button>
+                </div>
+
+                <!-- ADVANCED FIELDS -->
+                <div id="advanced-options" style="display: none;">
+
+                    <div class="form-group">
+                        <label>Organizer</label>
+                        <input type="text" id="organizer" placeholder="e.g. Tango Team">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Attachment URL (Webinar/File)</label>
+                        <input type="url" id="attach" placeholder="https://...">
+                    </div>
+
+                    <div class="form-group"
+                        style="border: 2px solid var(--input-border); padding: 15px; border-radius: 12px; background: rgba(255,255,255,0.5);">
+                        <label style="margin-bottom: 10px; display: block;">Reminder / Alarm</label>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                            <select id="reminder_type" onchange="toggleReminderInput()"
+                                style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--input-border);">
+                                <option value="minutes">Minutes before</option>
+                                <option value="hours">Hours before</option>
+                                <option value="days">Days before</option>
+                                <option value="date">Specific Date/Time</option>
+                            </select>
+
+                            <input type="number" id="reminder_val" placeholder="15" min="0"
+                                style="padding: 10px; border-radius: 8px; border: 1px solid var(--input-border);">
+                            <input type="datetime-local" id="reminder_date"
+                                style="display: none; padding: 10px; border-radius: 8px; border: 1px solid var(--input-border);">
+                        </div>
+                        <div id="reminder_feedback"
+                            style="font-size: 0.8rem; color: var(--accent); margin-top: 5px; font-weight: 600;"></div>
+                    </div>
+
+                    <div class="form-group" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                        <div>
+                            <label>Unique ID (UID)</label>
+                            <input type="text" id="uid" placeholder="Optional fixed ID">
+                            <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 2px;">
+                                Keeps the event connected if you send updates later.
+                            </div>
+                        </div>
+
+                        <div>
+                            <label>Recurrence</label>
+                            <select id="recur" onchange="toggleRecur()"
+                                style="width: 100%; padding: 12px; border-radius: 12px; border: 2px solid var(--input-border); background: var(--input-bg);">
+                                <option value="">None (One-time)</option>
+                                <option value="weekly">Weekly</option>
+                                <option value="monthly">Monthly</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group" id="recur-end-group" style="display: none;">
+                        <label>Repeat Until</label>
+                        <input type="date" id="recuruntil">
+                    </div>
+
+                </div>
+
+            </form>
+        </div>
+
+        <!-- PREVIEW COLUMN -->
+        <div class="preview-pane">
+
+            <!-- Visual Mockup -->
+            <div class="mockup-window">
+                <div class="mockup-header">
+                    <div class="dot red"></div>
+                    <div class="dot yellow"></div>
+                    <div class="dot green"></div>
+                </div>
+                <div class="mockup-content">
+                    <div class="event-card">
+                        <div class="event-time" id="prev-time">JUN 23 • 9:00 AM</div>
+                        <div class="event-title" id="prev-subject"><span class="empty">Event Title</span></div>
+
+                        <div class="event-detail">
+                            <span class="event-icon">📍</span>
+                            <span id="prev-location"><span class="empty">No location</span></span>
+                        </div>
+
+                        <div class="event-detail" style="align-items: flex-start;">
+                            <span class="event-icon">📝</span>
+                            <span id="prev-desc" style="font-size: 0.9em; max-height: 80px; overflow: hidden;"><span
+                                    class="empty">No description</span></span>
+                        </div>
+
+                        <!-- Attach Preview -->
+                        <div class="event-detail" id="prev-attach-row" style="display:none; color: var(--primary);">
+                            <span class="event-icon">📎</span>
+                            <span id="prev-attach"
+                                style="font-size: 0.9em; text-decoration: underline;">Attachment</span>
+                        </div>
+
+                        <!-- Recur Preview -->
+                        <div class="event-detail" id="prev-recur-row" style="display:none; color: var(--accent);">
+                            <span class="event-icon">🔄</span>
+                            <span id="prev-recur" style="font-size: 0.9em;">Repeats</span>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+            <!-- Output Actions -->
+            <div class="result-box" id="finalLink">
+                https://ics.agical.io/?subject=...
+            </div>
+
+            <div class="actions">
+                <button class="btn btn-primary" id="btn-copy" onclick="copyLink()">
+                    <span id="copyText">Copy Link</span>
+                </button>
+                <button class="btn btn-secondary" id="btn-test" onclick="testLink()">
+                    Test (Open ↗)
+                </button>
+            </div>
+
+            <div style="margin-top: 10px; text-align: center;">
+                <label style="font-size: 0.8rem; color: var(--text-muted); cursor: pointer;">
+                    <input type="checkbox" id="echo_debug" onchange="updateLink()"> Debug Mode (Show ICS text)
+                </label>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // Init dates
+        const now = new Date();
+        now.setMinutes(0);
+        const nextHour = new Date(now.getTime() + 60 * 60 * 1000);
+
+        // Helper to format for datetime-local (YYYY-MM-DDTHH:mm)
+        const formatDateTime = (date) => {
+            const pad = (n) => n < 10 ? '0' + n : n;
+            return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+        };
+
+        // Helper for date (YYYY-MM-DD)
+        const formatDate = (date) => {
+            const pad = (n) => n < 10 ? '0' + n : n;
+            return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+        };
+
+        document.getElementById('dtstart').value = formatDateTime(now);
+        document.getElementById('dtend').value = formatDateTime(nextHour);
+        document.getElementById('date_start').value = formatDate(now);
+        document.getElementById('date_end').value = formatDate(nextHour);
+
+        function toggleAdvanced() {
+            const el = document.getElementById('advanced-options');
+            const arrow = document.getElementById('adv-arrow');
+            if (el.style.display === 'none') {
+                el.style.display = 'block';
+                arrow.innerText = '▲';
+            } else {
+                el.style.display = 'none';
+                arrow.innerText = '▼';
+            }
+        }
+
+        function toggleReminderInput() {
+            const type = document.getElementById('reminder_type').value;
+            const valInput = document.getElementById('reminder_val');
+            const dateInput = document.getElementById('reminder_date');
+
+            if (type === 'date') {
+                valInput.style.display = 'none';
+                dateInput.style.display = 'block';
+            } else {
+                valInput.style.display = 'block';
+                dateInput.style.display = 'none';
+            }
+            updateLink();
+        }
+
+        function toggleRecur() {
+            const val = document.getElementById('recur').value;
+            document.getElementById('recur-end-group').style.display = val ? 'block' : 'none';
+            updateLink();
+        }
+
+        function toggleTimeInputs() {
+            const isAllDay = document.getElementById('all_day').checked;
+            const timeInputs = ['dtstart', 'dtend'];
+            const dateInputs = ['date_start', 'date_end'];
+
+            if (isAllDay) {
+                timeInputs.forEach(id => document.getElementById(id).style.display = 'none');
+                dateInputs.forEach(id => document.getElementById(id).style.display = 'block');
+            } else {
+                timeInputs.forEach(id => document.getElementById(id).style.display = 'block');
+                dateInputs.forEach(id => document.getElementById(id).style.display = 'none');
+            }
+            updateLink();
+        }
+
+        function updateLink() {
+            // Get Values
+            const subject = document.getElementById('subject').value;
+            const location = document.getElementById('location').value;
+            const description = document.getElementById('description').value;
+            const organizer = document.getElementById('organizer').value;
+            const isAllDay = document.getElementById('all_day').checked;
+
+            // Advanced
+            const attach = document.getElementById('attach').value;
+            // Reminder Logic
+            const remType = document.getElementById('reminder_type').value;
+            let reminderMinutes = '';
+            let feedback = '';
+
+            // Calculate dates
+            let dtstart, dtend;
+            if (isAllDay) {
+                dtstart = document.getElementById('date_start').value;
+                dtend = document.getElementById('date_end').value;
+            } else {
+                dtstart = document.getElementById('dtstart').value;
+                dtend = document.getElementById('dtend').value;
+            }
+
+            // Date Validation
+            let dateError = '';
+            if (dtstart && dtend) {
+                if (new Date(dtstart) > new Date(dtend)) {
+                    dateError = '⚠️ Error: End date cannot be before Start date!';
+                }
+            }
+
+            const feedbackEl = document.getElementById('reminder_feedback');
+            if (dateError) {
+                feedbackEl.innerText = dateError;
+                feedbackEl.style.color = '#ef4444';
+                // Don't override if there was a reminder error, but date error is usually more critical.
+            } else if (!feedback.startsWith('Error')) {
+                // If no date error, show reminder feedback (if any)
+                // Note: we calculated 'feedback' above for reminders
+                feedbackEl.innerText = feedback;
+                feedbackEl.style.color = 'var(--accent)';
+            }
+
+            if (remType === 'date') {
+                const remDateVal = document.getElementById('reminder_date').value;
+                if (remDateVal && dtstart) {
+                    const startObj = new Date(dtstart);
+                    const remObj = new Date(remDateVal);
+                    const diffMs = startObj - remObj;
+                    const diffMins = Math.floor(diffMs / 60000);
+
+                    if (diffMins > 0) {
+                        reminderMinutes = diffMins;
+                        if (!dateError) { // Only show successful reminder msg if dates are valid
+                            feedback = `Reminder set for ${diffMins} minutes before event.`;
+                            feedbackEl.innerText = feedback;
+                            feedbackEl.style.color = 'var(--accent)';
+                        }
+                    } else {
+                        if (!dateError) {
+                            feedback = "⚠️ Error: Reminder date must be BEFORE the event start.";
+                            feedbackEl.innerText = feedback;
+                            feedbackEl.style.color = '#ef4444';
+                            // Also block generation on bad reminder date
+                            dateError = feedback;
+                        }
+                    }
+                }
+            } else {
+                const val = document.getElementById('reminder_val').value;
+                if (val) {
+                    if (remType === 'minutes') reminderMinutes = val;
+                    if (remType === 'hours') reminderMinutes = val * 60;
+                    if (remType === 'days') reminderMinutes = val * 60 * 24;
+                    feedback = `Reminder: ${val} ${remType} (${reminderMinutes} mins)`;
+                    if (!dateError && val) {
+                        document.getElementById('reminder_feedback').innerText = `Reminder: ${val} ${remType} (${reminderMinutes} mins)`;
+                    }
+                }
+            }
+
+            // BLOCK BUTTONS & LINK IF ERROR
+            const copyBtn = document.getElementById('btn-copy');
+            const testBtn = document.getElementById('btn-test');
+            const linkBox = document.getElementById('finalLink');
+
+            if (dateError) {
+                copyBtn.disabled = true;
+                testBtn.disabled = true;
+                copyBtn.style.opacity = '0.5';
+                testBtn.style.opacity = '0.5';
+                copyBtn.style.cursor = 'not-allowed';
+                testBtn.style.cursor = 'not-allowed';
+                linkBox.style.opacity = '0.5';
+                linkBox.innerText = dateError;
+            } else {
+                copyBtn.disabled = false;
+                testBtn.disabled = false;
+                copyBtn.style.opacity = '1';
+                testBtn.style.opacity = '1';
+                copyBtn.style.cursor = 'pointer';
+                testBtn.style.cursor = 'pointer';
+                linkBox.style.opacity = '1';
+            }
+
+            if (dateError) return; // Stop here if error
+
+            const uid = document.getElementById('uid').value;
+            const recur = document.getElementById('recur').value;
+            const recuruntil = document.getElementById('recuruntil').value;
+            const echo = document.getElementById('echo_debug').checked;
+
+            // Dates are already calculated for validation
+
+            // Build Params
+            const params = new URLSearchParams();
+            if (subject) params.append('subject', subject);
+            if (location) params.append('location', location);
+            if (description) params.append('description', description);
+            if (organizer) params.append('organizer', organizer);
+
+            if (attach) params.append('attach', attach);
+            if (reminderMinutes) params.append('reminder', reminderMinutes);
+            if (uid) params.append('uid', uid);
+            if (recur) params.append('recur', recur);
+            if (recur && recuruntil) params.append('recuruntil', recuruntil);
+            if (echo) params.append('echo', '1');
+
+            // Dates
+            if (dtstart) params.append('dtstart', dtstart);
+            if (dtend) params.append('dtend', dtend);
+            if (isAllDay) params.append('all_day', '1');
+
+            const finalUrl = `https://ics.agical.io/?${params.toString()}`;
+
+            // Update Output
+            document.getElementById('finalLink').innerText = finalUrl;
+
+            // Update Preview
+            document.getElementById('prev-subject').innerText = subject || 'Event Title';
+            if (subject === '') document.getElementById('prev-subject').innerHTML = '<span class="empty">Event Title</span>';
+
+            document.getElementById('prev-location').innerText = location || 'No location';
+            if (location === '') document.getElementById('prev-location').innerHTML = '<span class="empty">No location</span>';
+
+            document.getElementById('prev-desc').innerText = description || 'No description';
+            if (description === '') document.getElementById('prev-desc').innerHTML = '<span class="empty">No description</span>';
+
+            // Preview Advanced
+            document.getElementById('prev-attach-row').style.display = attach ? 'flex' : 'none';
+
+            if (recur) {
+                document.getElementById('prev-recur-row').style.display = 'flex';
+                document.getElementById('prev-recur').innerText = 'Repeats ' + recur + (recuruntil ? ' until ' + recuruntil : '');
+            } else {
+                document.getElementById('prev-recur-row').style.display = 'none';
+            }
+
+            // Preview Time Logic
+            if (dtstart) {
+                const dateObj = new Date(dtstart);
+                const options = { month: 'short', day: 'numeric' };
+                if (!isAllDay) {
+                    options.hour = 'numeric';
+                    options.minute = 'numeric';
+                }
+                const timeStr = dateObj.toLocaleDateString('en-US', options);
+                document.getElementById('prev-time').innerText = timeStr.toUpperCase();
+            }
+        }
+
+        function copyLink() {
+            const text = document.getElementById('finalLink').innerText;
+            navigator.clipboard.writeText(text).then(() => {
+                const btn = document.getElementById('copyText');
+                const original = btn.innerText;
+                btn.innerText = "Copied!";
+                setTimeout(() => btn.innerText = original, 2000);
+            });
+        }
+
+        function testLink() {
+            const url = document.getElementById('finalLink').innerText;
+            window.open(url, '_blank');
+        }
+
+        // Initial call
+        updateLink();
+
+    </script>
+</body>
+
+</html>
