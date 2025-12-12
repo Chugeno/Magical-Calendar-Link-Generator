@@ -391,22 +391,16 @@
                 </div>
 
                 <div class="form-group">
-                    <label>Event Timezone (Fixes "Wrong Day" issues)</label>
-                    <select id="timezone_offset" onchange="updateLink()"
-                        style="width: 100%; padding: 12px; border-radius: 12px; border: 2px solid var(--input-border); background: var(--input-bg);">
-                        <option value="">UTC (Default - May show wrong day)</option>
-                        <option value="-03:00">🇦🇷 Argentina / Brasil (UTC-3)</option>
-                        <option value="-04:00">🌎 America East (UTC-4)</option>
-                        <option value="-05:00">🇺🇸 Eastern Time (UTC-5)</option>
-                        <option value="-06:00">🇺🇸 Central Time (UTC-6)</option>
-                        <option value="-07:00">🏞️ Mountain Time (UTC-7)</option>
-                        <option value="-08:00">🌉 Pacific Time / Oregon (UTC-8)</option>
-                        <option value="+00:00">🇬🇧 UK / GMT (UTC+0)</option>
-                        <option value="+01:00">🇪🇺 Central Europe (UTC+1)</option>
-                        <option value="+02:00">🇪🇺 East Europe (UTC+2)</option>
-                    </select>
-                    <div style="font-size: 0.75rem; color: var(--primary); margin-top: 4px;">
-                        * Select the timezone WHERE THE EVENT IS HAPPENING.
+                    <label>Event Timezone (Search City/Region)</label>
+                    <input list="tz_list" id="timezone_input" placeholder="e.g. Los Angeles, Buenos Aires..."
+                        onchange="updateLink()" oninput="updateLink()">
+                    <datalist id="tz_list"></datalist>
+
+                    <div id="tz_feedback"
+                        style="font-size: 0.75rem; color: var(--accent); margin-top: 4px; font-weight: 600;"></div>
+
+                    <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 2px;">
+                        * Sets the correct time for everyone (handles Summer/Winter time auto-magically).
                     </div>
                 </div>
 
@@ -609,6 +603,75 @@
             }
         }
 
+        // Populate Timezones
+        try {
+            const zones = Intl.supportedValuesOf('timeZone');
+            const dataList = document.getElementById('tz_list');
+            zones.forEach(z => {
+                const opt = document.createElement('option');
+                opt.value = z;
+                dataList.appendChild(opt);
+            });
+        } catch (e) {
+            console.warn("Intl API not supported fully");
+        }
+
+        // Helper: Get Offset string (e.g. "-08:00") for a specific date & zone
+        function getOffset(dateStr, timeZone) {
+            if (!timeZone || !dateStr) return '';
+            try {
+                // dateStr is YYYY-MM-DD (or with time)
+                // We create a date object. If just YYYY-MM-DD, it defaults to UTC midnight usually if standard ISO.
+                // But we want to find the offset of THAT LOCAL time.
+                // Trick: Create a date, then format it to parts in that zone, compare hours?
+                // Easier: Use Intl.DateTimeFormat with formatToParts
+
+                const d = new Date(dateStr);
+
+                // Get the string in the target timezone
+                // We need the offset between UTC and Target Zone for that specific timestamp.
+                // Actually, the simplest way to get ISO offset:
+                // format date to "en-US" with timeZone, get "GMT-8" or "GMT-7"? No standard format.
+
+                // Robust way:
+                // 1. Get Epoch of the date assuming it IS local time there? No, we don't know the offset yet.
+                // 2. We assume the user means "On this day". 
+                // Let's use noon to avoid midnight edge cases?
+                // Actually, for All Day, we usually mean Midnight.
+
+                // Correct approach to find offset:
+                // Take current date, format it to IANA zone parts.
+                const format = new Intl.DateTimeFormat('en-US', {
+                    timeZone: timeZone,
+                    year: 'numeric', month: 'numeric', day: 'numeric',
+                    hour: 'numeric', minute: 'numeric', second: 'numeric',
+                    hour12: false,
+                    timeZoneName: 'longOffset' // "GMT-07:00"
+                });
+
+                // changing the input date to a specific point (e.g. noon UTC of that day) to check the offset active then.
+                // If the user inputs 2026-06-21, we check 2026-06-21T12:00:00Z?
+                // Yes, noon is safe for DST switches (usually happen at 2/3 AM).
+                const refDate = new Date(dateStr + 'T12:00:00Z');
+
+                const parts = format.formatToParts(refDate);
+                const tzPart = parts.find(p => p.type === 'timeZoneName');
+
+                // tzPart.value example: "GMT-08:00" or "GMT+05:30"
+                if (!tzPart) return '';
+
+                // Extract just the offset: -08:00
+                const gmtString = tzPart.value.replace('GMT', '');
+                // Handle "GMT" (Z) case
+                if (gmtString === '') return '+00:00';
+
+                return gmtString;
+            } catch (e) {
+                console.error(e);
+                return '';
+            }
+        }
+
         function toggleReminderInput() {
             const type = document.getElementById('reminder_type').value;
             const valInput = document.getElementById('reminder_val');
@@ -652,7 +715,8 @@
             const description = document.getElementById('description').value;
             const organizer = document.getElementById('organizer').value;
             const isAllDay = document.getElementById('all_day').checked;
-            const tzOffset = document.getElementById('timezone_offset').value;
+            // Get Dynamic Offset
+            const reqZone = document.getElementById('timezone_input').value; // e.g. "America/Los_Angeles"
 
             // Advanced
             const attach = document.getElementById('attach').value;
@@ -670,43 +734,49 @@
                 const ds = document.getElementById('date_start').value;
                 const de = document.getElementById('date_end').value;
 
-                if (tzOffset) {
-                    // Timezone Fix: Send specific time with offset to force correct day in UTC
-                    // e.g. 2026-06-21T00:00:00-08:00
-                    // Agical will convert this to 2026-06-21T08:00:00Z
-                    // Devices will read it correctly relative to their zone.
-                    // IMPORTANT: We typically drop 'all_day=1' to rely on the time, 
-                    // BUT for a true "All Day" feel, 00:00 to 00:00 next day is best.
-                    // Agical might imply timed event if we send time. 
-                    // Let's try sending just the start/end with offset logic.
+                if (reqZone && ds) {
+                    // Smart Offset Calculation
+                    const offset = getOffset(ds, reqZone);
 
-                    dtstart = ds ? `${ds}T00:00:00${tzOffset}` : '';
-                    dtend = de ? `${de}T00:00:00${tzOffset}` : '';
-
-                    // If we send time, we usually DON'T want all_day=1 because Agical ignores time with all_day=1?
-                    // Let's assume we WANT precise control, so we disable auto-all-day flag if we are forcing timezone.
-                    useAllDayParam = false;
+                    if (offset) {
+                        dtstart = ds ? `${ds}T00:00:00${offset}` : '';
+                        dtend = de ? `${de}T00:00:00${offset}` : '';
+                        useAllDayParam = false;
+                        document.getElementById('tz_feedback').innerText = `Active Offset: ${offset} (based on date)`;
+                    } else {
+                        // Invalid zone
+                        dtstart = ds;
+                        dtend = de;
+                        document.getElementById('tz_feedback').innerText = '';
+                    }
                 } else {
-                    // Legacy/Default (UTC Midnight)
                     dtstart = ds;
                     dtend = de;
+                    document.getElementById('tz_feedback').innerText = '';
                 }
             } else {
                 // TIMED LOGIC
                 let s = document.getElementById('dtstart').value;
                 let e = document.getElementById('dtend').value;
 
-                if (tzOffset && s && e) {
-                    // Browser datetime-local usually has no offset (implied local).
-                    // We need to attach the chosen offset.
-                    dtstart = `${s}:00${tzOffset}`;
-                    dtend = `${e}:00${tzOffset}`;
+                if (reqZone && s) {
+                    // Extract just the day part YYYY-MM-DD from 's' to check offset
+                    const dayPart = s.split('T')[0];
+                    const offset = getOffset(dayPart, reqZone);
+
+                    if (offset) {
+                        dtstart = `${s}:00${offset}`;
+                        dtend = `${e}:00${offset}`;
+                        document.getElementById('tz_feedback').innerText = `Active Offset: ${offset}`;
+                    } else {
+                        dtstart = s;
+                        dtend = e;
+                        document.getElementById('tz_feedback').innerText = '';
+                    }
                 } else {
-                    // No offset selected, rely on Agical default (or append Z if we wanted UTC)
-                    // Agical likely treats YYYY-MM-DDTHH:mm as floating or UTC?
-                    // Let's send it raw if no offset.
                     dtstart = s;
                     dtend = e;
+                    document.getElementById('tz_feedback').innerText = '';
                 }
             }
 
